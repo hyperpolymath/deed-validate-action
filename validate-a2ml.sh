@@ -136,8 +136,32 @@ validate_a2ml() {
            || [[ "$line" =~ ^@abstract ]]; then
             has_identity=true
         fi
+        # DEED keyword identity form: `:canonical-name "..."`.  Leading colon,
+        # hyphenated, SPACE-separated — so it matches none of the forms above,
+        # which all require `=` or `:` as a separator.  Adding the `.deed` glob
+        # without this would discover every deed and then fail it.
+        if [[ "$line" =~ ^[[:space:]]*:(canonical-name|estate-authority|agent-id)[[:space:]] ]]; then
+            has_identity=true
+        fi
         # Check for version field (either separator)
         if [[ "$line" =~ ^[[:space:]]*(version|schema_version)[[:space:]]*[=:] ]]; then
+            has_version=true
+        fi
+        # DEED keyword version form: `:schema-version "0.1.0"`.  Matched
+        # deliberately narrowly: `:registry-version` is a DISTINCT optional
+        # field and must NOT satisfy the required-version check.
+        if [[ "$line" =~ ^[[:space:]]*:schema-version[[:space:]] ]]; then
+            has_version=true
+        fi
+        # S-expression dialect (the sanctioned fourth surface): identity and
+        # version are NESTED FORMS — `(metadata (name "…") (version "…"))` —
+        # so they match neither the TOML `key =` nor the `[metadata]` bracket
+        # patterns above.  The conformance corpus lists
+        # valid/s-expression-state.a2ml as expect="pass", and it did not.
+        if [[ "$line" =~ ^[[:space:]]*\((metadata|scorecard)([[:space:]]|$) ]]; then
+            has_identity=true
+        fi
+        if [[ "$line" =~ ^[[:space:]]*\(version[[:space:]] ]]; then
             has_version=true
         fi
         # Template placeholder marker ({{PROJECT_NAME}}, {{VERSION}}, …)
@@ -146,12 +170,27 @@ validate_a2ml() {
         fi
     done < "$file"
 
+    # DEED head form as identity.  Not every deed carries `:canonical-name` —
+    # `ATLAS.deed` identifies itself by its head alone, exactly as the six-file
+    # set identifies itself by a `[metadata]` section.  Only the FIRST
+    # s-expression in the file is consulted: a recognised head appearing after
+    # some other form is a MISPLACED head, not identity, and must still warn.
+    # The four heads are enumerated rather than matched as `*-deed` so that an
+    # invented head is not silently accepted as a fifth.
+    local first_form
+    first_form="$(grep -m1 '^(' "$file" || true)"
+    if [[ "$first_form" =~ ^\((estate-deed|estate-atlas-deed|repo-deed|praxis-deed)([[:space:]]|$) ]]; then
+        has_identity=true
+    fi
+
     # Classes that are identity-free by design (see header):
     local basename
     basename="$(basename "$file")"
     local identity_exempt=false
     # AI manifests: markdown prose (0-AI-MANIFEST.a2ml, AI.a2ml, …)
-    if [[ "$basename" == *"AI-MANIFEST"* || "$basename" == "AI.a2ml" ]]; then
+    # `AI.deed` is listed alongside `AI.a2ml` so that renaming a file does not
+    # silently TIGHTEN the gate on it.  A rename must be behaviour-preserving.
+    if [[ "$basename" == *"AI-MANIFEST"* || "$basename" == "AI.a2ml" || "$basename" == "AI.deed" ]]; then
         identity_exempt=true
     fi
     # Templates/scaffolds
@@ -234,14 +273,19 @@ validate_a2ml() {
 # ---------------------------------------------------------------------------
 
 echo "::group::A2ML Manifest Validation"
-echo "Scanning ${SCAN_PATH} for .a2ml files..."
+echo "Scanning ${SCAN_PATH} for .deed and .a2ml files..."
 echo ""
 
 # Find all .a2ml files, excluding .git directory
-mapfile -t a2ml_files < <(find "$SCAN_PATH" -name '*.a2ml' -not -path '*/.git/*' -type f | sort)
+# Discovery globs BOTH extensions.  `.deed` is the current format name; `.a2ml`
+# is the superseded one and is still present in the wild, so both are scanned.
+# NOTE: globbing `.a2ml` alone meant this action scanned nothing in a converted
+# repository and exited 0 — a total gate bypass that reports success.  Assert on
+# the discovery COUNT, never on the exit code.
+mapfile -t a2ml_files < <(find "$SCAN_PATH" \( -name '*.a2ml' -o -name '*.deed' \) -not -path '*/.git/*' -type f | sort)
 
 if [[ ${#a2ml_files[@]} -eq 0 ]]; then
-    echo "::notice::No .a2ml files found in ${SCAN_PATH}"
+    echo "::notice::No .deed or .a2ml files found in ${SCAN_PATH}"
     echo "files_scanned=0" >> "$GITHUB_OUTPUT" 2>/dev/null || true
     echo "errors=0" >> "$GITHUB_OUTPUT" 2>/dev/null || true
     echo "warnings=0" >> "$GITHUB_OUTPUT" 2>/dev/null || true
@@ -249,7 +293,7 @@ if [[ ${#a2ml_files[@]} -eq 0 ]]; then
     exit 0
 fi
 
-echo "Found ${#a2ml_files[@]} .a2ml file(s)"
+echo "Found ${#a2ml_files[@]} DEED-family file(s)"
 echo ""
 
 for file in "${a2ml_files[@]}"; do
@@ -276,9 +320,9 @@ echo "::endgroup::"
 
 # Exit with failure if errors were found
 if [[ $ERRORS -gt 0 ]]; then
-    echo "::error::A2ML validation failed with ${ERRORS} error(s)"
+    echo "::error::DEED validation failed with ${ERRORS} error(s)"
     exit 1
 fi
 
-echo "A2ML validation passed."
+echo "DEED validation passed."
 exit 0

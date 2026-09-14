@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# action.yml — Validate A2ML Manifests GitHub Action
-# Scans repository for .a2ml files and validates structure, required fields,
-# SPDX headers, and attestation blocks.
+# action.yml — Validate DEED Manifests GitHub Action
+# Scans repository for .deed (and superseded .a2ml) files and validates
+# structure, required fields, SPDX headers, and attestation blocks.
 
-name: 'Validate A2ML Manifests'
+name: 'Validate DEED Manifests'
 description: >-
-  Scan and validate .a2ml manifest files in your repository.
-  Checks for required fields (agent-id/pedigree name, version),
-  SPDX headers, and attestation block structure.
+  Scan and validate .deed manifest files against the DEED grammar.
+  Checks identity (:canonical-name), version (:schema-version),
+  SPDX headers, and attestation block structure. Also reads the
+  superseded .a2ml extension.
 author: 'Jonathan D.A. Jewell'
 
 branding:
@@ -19,7 +20,7 @@ branding:
 inputs:
   path:
     description: >-
-      Directory path to scan for .a2ml files.
+      Directory path to scan for .deed files (and superseded .a2ml).
       Defaults to the repository root.
     required: false
     default: '.'
@@ -32,7 +33,7 @@ inputs:
 
 outputs:
   files-scanned:
-    description: 'Number of .a2ml files scanned'
+    description: 'Number of DEED-family files scanned'
     value: ${{ steps.validate.outputs.files_scanned }}
   errors:
     description: 'Number of validation errors found'
@@ -44,7 +45,7 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Validate A2ML manifests
+    - name: Validate DEED manifests
       id: validate
       shell: bash
       env:
