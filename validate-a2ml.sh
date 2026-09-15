@@ -158,10 +158,17 @@ validate_a2ml() {
         # so they match neither the TOML `key =` nor the `[metadata]` bracket
         # patterns above.  The conformance corpus lists
         # valid/s-expression-state.a2ml as expect="pass", and it did not.
-        if [[ "$line" =~ ^[[:space:]]*\((metadata|scorecard)([[:space:]]|$) ]]; then
+        # ⛔ NOT anchored to line start: the nested form is frequently INLINED
+        # as `(state (metadata (name "…") (version "…")))`, putting both
+        # `(metadata` and `(version` mid-line.  A `^[[:space:]]*` anchor here
+        # silently failed every inlined deed -- and in strict mode that
+        # rejected a VALID manifest.  The `(` prefix and the trailing
+        # whitespace/EOL keep the token boundary, so `:registry-version`
+        # and `(versioning` still do not match.
+        if [[ "$line" =~ \((metadata|scorecard)([[:space:]]|$) ]]; then
             has_identity=true
         fi
-        if [[ "$line" =~ ^[[:space:]]*\(version[[:space:]] ]]; then
+        if [[ "$line" =~ \(version[[:space:]] ]]; then
             has_version=true
         fi
         # Template placeholder marker ({{PROJECT_NAME}}, {{VERSION}}, …)

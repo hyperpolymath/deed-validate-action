@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 
-= Validate A2ML Manifests -- GitHub Action
+= Validate DEED Manifests -- GitHub Action
 :author: Jonathan D.A. Jewell
 :toc: preamble
 :icons: font
 
 == Overview
 
-GitHub Action that scans a repository for `.a2ml` files and validates their structure,
-required fields, and compliance with the
-https://github.com/hyperpolymath/standards/tree/main/a2ml[A2ML specification].
+GitHub Action that scans a repository for `.deed` files -- and the superseded `.a2ml`
+extension -- and validates their structure, required fields, and compliance with the
+https://github.com/hyperpolymath/standards/tree/main/deed[DEED specification].
 
-A2ML (Attested Markup Language) is the manifest format used across
+DEED -- which supersedes A2ML (Attestation Markup Language) -- is the manifest format used across
 https://github.com/hyperpolymath/standards[RSR (Rhodium Standard Repository)] projects to
 declare machine-readable metadata, AI agent instructions, attestation provenance, and
 project state.
@@ -47,18 +47,18 @@ Add this step to any GitHub Actions workflow:
 
 [source,yaml]
 ----
-name: Validate A2ML
+name: Validate DEED
 on: [push, pull_request]
 
 permissions:
   contents: read
 
 jobs:
-  validate-a2ml:
+  validate-deed:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: hyperpolymath/standards/a2ml/actions/validate@main
+      - uses: hyperpolymath/deed-validate-action@v1
         with:
           path: '.'        # Directory to scan (default: repo root)
           strict: 'false'  # Promote warnings to errors (default: false)
@@ -72,12 +72,12 @@ jobs:
 
 | `path`
 | `.`
-| Directory path to scan for `.a2ml` files. The scan is recursive, excluding `.git/`.
+| Directory path to scan for `.deed` files (and superseded `.a2ml`). The scan is recursive, excluding `.git/`.
 
 | `strict`
 | `false`
 | When `true`, all warnings are promoted to errors and the action fails on any validation
-  issue. Recommended for repositories that require full A2ML compliance.
+  issue. Recommended for repositories that require full DEED compliance.
 |===
 
 === Outputs
@@ -87,7 +87,7 @@ jobs:
 | Output | Description
 
 | `files-scanned`
-| Number of `.a2ml` files discovered and processed.
+| Number of DEED-family files (`.deed` and superseded `.a2ml`) discovered and processed.
 
 | `errors`
 | Count of validation errors. The action exits with code 1 if this is non-zero.
@@ -103,7 +103,7 @@ jobs:
 | Code | Meaning
 
 | `0`
-| All files valid (or only warnings in non-strict mode). Also returned when no `.a2ml`
+| All files valid (or only warnings in non-strict mode). Also returned when no DEED-family
   files are found (with a `::notice::` annotation).
 
 | `1`
@@ -132,8 +132,9 @@ SPDX-License-Identifier: MPL-2.0
 
 See link:LICENSE[LICENSE] for the full text.
 
-== Part of the A2ML Ecosystem
+== Part of the DEED Ecosystem
 
-This action is part of the link:../../README.adoc[A2ML specification and tooling] in the
-https://github.com/hyperpolymath/standards[standards monorepo]. See the parent directory
-for language bindings, Pandoc support, editor integrations, and the CLI.
+This action is part of the https://github.com/hyperpolymath/deed-ecosystem[DEED specification
+and tooling]. The normative grammar lives in the
+https://github.com/hyperpolymath/standards/tree/main/deed[standards monorepo], with language
+bindings, Pandoc support, editor integrations, and the CLI.
