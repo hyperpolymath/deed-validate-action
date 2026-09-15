@@ -1,0 +1,7 @@
+; SPDX-License-Identifier: MPL-2.0
+; The MULTI-LINE nested form. This shape always passed, which is precisely why
+; the anchor bug stayed latent -- the corpus only ever exercised this one.
+(repo-deed
+  (metadata
+    (name "multiline-nested")
+    (version "1.0.0")))

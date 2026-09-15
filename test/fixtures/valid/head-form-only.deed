@@ -1,0 +1,5 @@
+; SPDX-License-Identifier: MPL-2.0
+; Identity by HEAD FORM ALONE -- no :canonical-name anywhere. This is how
+; ATLAS.deed identifies itself. One of the four ruled heads.
+(estate-atlas-deed
+  :schema-version "1.0.0")

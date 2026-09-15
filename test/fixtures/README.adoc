@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: MPL-2.0
+= Self-test fixture corpus
+
+Fixtures for `.github/workflows/self-test.yml`, which runs this action against
+its own tree. Before v1.0.0 no such workflow existed and this directory did not
+either — the action's own repository contained not one `.deed` file, so nothing
+it did was ever exercised against the format it is named for.
+
+== The two rules this corpus enforces
+
+*Assert on discovery count, never on exit code.* A validator that finds nothing
+exits `0`. Run the pre-v1.0.0 validator against `deed-only/` and it says:
+
+----
+::notice::No .a2ml files found in test/fixtures/deed-only
+----
+
+A `::notice::`, not a warning. Exit code `0`. No outputs set. Every workflow
+downstream sees a green tick. That is the defect v1.0.0 fixes, and an exit-code
+assertion cannot detect it.
+
+*Always run a positive control.* `invalid/` must report a non-zero error count.
+If it ever reports zero, the run has lost the ability to see failure and every
+other green result in the workflow is worthless.
+
+== `valid/` — 5 files, must be clean
+
+[cols="1,3"]
+|===
+| `inline-nested.deed` | The inlined nested form, `(repo-deed (metadata (name "…") (version "…")))`. Both `(metadata` and `(version` sit mid-line. *This is the shape that silently failed* — the checks were anchored with `^[[:space:]]*`, and under `strict: true` that rejected a valid manifest.
+| `multiline-nested.deed` | The same structure written across several lines, putting `(version` at the start of its own line. This shape always passed, which is exactly why the anchor bug stayed latent: the conformance corpus contained only this variant. A corpus that passes is not proof the regex is right; it is proof the corpus does not exercise the shape.
+| `keyword-identity.deed` | Keyword identity and version — `:canonical-name` with `:schema-version`.
+| `head-form-only.deed` | Identity by *head form alone*, with no `:canonical-name` anywhere. This is how `ATLAS.deed` identifies itself. The four ruled heads are enumerated, not pattern-matched.
+| `legacy-superseded.a2ml` | The superseded `.a2ml` extension must still be discovered and validated.
+|===
+
+== `invalid/` — 3 files, must all be rejected
+
+[cols="1,3"]
+|===
+| `no-version.deed` | Identity present, version absent.
+| `versioning-is-not-version.deed` | *Token-boundary control.* `(versioning "1.0.0")` must not satisfy the version check.
+| `registry-version-is-not-version.deed` | *Token-boundary control.* `:registry-version "1.0.0"` must not satisfy the version check.
+|===
+
+The two boundary controls exist because v1.0.0 *removed* the `^` anchors, which
+widens what matches. They are what stops that widening going too far. If either
+ever passes, the regex has been loosened past the token boundary.
+
+== `deed-only/` — 1 file, the regression test
+
+A directory containing not one `.a2ml` file. Against the pre-v1.0.0 glob this
+scans zero files, reports zero errors and exits `0`. The job asserts
+`files-scanned == 1`, so the silent bypass fails the build instead of passing it.
+
+== Changing the corpus
+
+The counts in `self-test.yml` are pinned deliberately. Adding a fixture means
+editing the expected number in the same commit — so that silent *under*-discovery
+cannot slip through as a pass.

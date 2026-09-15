@@ -1,0 +1,153 @@
+# SPDX-License-Identifier: MPL-2.0
+# Self-test — this action run against its own fixture corpus.
+#
+# Why this workflow exists
+# ------------------------
+# Until v1.0.0 this action had no self-test at all, and its own tree contained
+# not one `.deed` file. Its discovery glob named `*.a2ml` only, so a repository
+# holding nothing but `.deed` manifests scanned zero files, reported zero
+# errors and exited 0 — a silent total bypass that a green tick concealed.
+#
+# Two rules follow from that, and both are load-bearing here:
+#
+#   1. ASSERT ON DISCOVERY COUNT, NEVER ON EXIT CODE. A validator that finds
+#      nothing exits 0. Checking only the exit code cannot tell "all clean"
+#      apart from "saw nothing at all" — which is precisely the defect that
+#      shipped.
+#   2. ALWAYS RUN A POSITIVE CONTROL. The `invalid` job must report non-zero
+#      errors. If it ever reports zero, the run has stopped being able to see
+#      failure, and every other green result in this workflow is worthless.
+
+name: Self-test
+
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Valid corpus — every accepted shape, including the two that broke.
+  # ---------------------------------------------------------------------------
+  valid-corpus:
+    name: valid corpus (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - id: validate
+        uses: ./
+        with:
+          path: test/fixtures/valid
+          strict: 'true'
+      - name: Assert 5 files discovered and all clean
+        env:
+          SCANNED: ${{ steps.validate.outputs.files-scanned }}
+          ERRORS: ${{ steps.validate.outputs.errors }}
+          WARNINGS: ${{ steps.validate.outputs.warnings }}
+        run: |
+          set -euo pipefail
+          # The count is pinned deliberately. Adding a fixture must be a
+          # conscious edit here, so that silent UNDER-discovery cannot pass.
+          if [ "${SCANNED}" != "5" ]; then
+            echo "::error::expected 5 files discovered, got ${SCANNED}"
+            exit 1
+          fi
+          if [ "${ERRORS}" != "0" ] || [ "${WARNINGS}" != "0" ]; then
+            echo "::error::valid corpus must be clean, got ${ERRORS} error(s) and ${WARNINGS} warning(s)"
+            exit 1
+          fi
+          echo "valid corpus: ${SCANNED} discovered, clean"
+
+  # ---------------------------------------------------------------------------
+  # Invalid corpus — THE POSITIVE CONTROL. This job proves the run is capable
+  # of reporting a non-zero error count. Without it, every green above is
+  # unfalsifiable.
+  #
+  # Two of the three fixtures are token-boundary controls: `(versioning` and
+  # `:registry-version` must NOT satisfy the version check. Removing the `^`
+  # anchors in v1.0.0 widened what matches, and these fixtures are what stop
+  # that widening going too far.
+  # ---------------------------------------------------------------------------
+  invalid-corpus:
+    name: invalid corpus (positive control)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - id: validate
+        continue-on-error: true   # the action is SUPPOSED to fail here
+        uses: ./
+        with:
+          path: test/fixtures/invalid
+          strict: 'true'
+      - name: Assert every invalid fixture was caught
+        env:
+          SCANNED: ${{ steps.validate.outputs.files-scanned }}
+          ERRORS: ${{ steps.validate.outputs.errors }}
+        run: |
+          set -euo pipefail
+          if [ "${SCANNED}" != "3" ]; then
+            echo "::error::expected 3 files discovered, got ${SCANNED}"
+            exit 1
+          fi
+          # Not merely "> 0": every fixture in this directory is invalid, so a
+          # count below 3 means one of them was wrongly accepted.
+          if [ "${ERRORS}" != "3" ]; then
+            echo "::error::positive control failed — expected 3 errors, got ${ERRORS}"
+            echo "::error::if this reads 0, the run can no longer detect failure at all"
+            exit 1
+          fi
+          echo "invalid corpus: ${SCANNED} discovered, ${ERRORS} correctly rejected"
+
+  # ---------------------------------------------------------------------------
+  # Discovery control — a directory containing NOT ONE `.a2ml` file.
+  #
+  # This is the regression test for the original defect. Against the pre-v1.0.0
+  # glob this job reports 0 files scanned and 0 errors, and a naive exit-code
+  # check would call that a pass.
+  # ---------------------------------------------------------------------------
+  deed-only-discovery:
+    name: .deed-only discovery (regression)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - id: validate
+        uses: ./
+        with:
+          path: test/fixtures/deed-only
+          strict: 'true'
+      - name: Assert the .deed file was actually seen
+        env:
+          SCANNED: ${{ steps.validate.outputs.files-scanned }}
+          ERRORS: ${{ steps.validate.outputs.errors }}
+        run: |
+          set -euo pipefail
+          if [ "${SCANNED}" != "1" ]; then
+            echo "::error::expected 1 file discovered, got ${SCANNED}"
+            echo "::error::0 here means the glob has stopped matching .deed — the v1.0.0 defect has returned"
+            exit 1
+          fi
+          if [ "${ERRORS}" != "0" ]; then
+            echo "::error::expected the .deed fixture to validate cleanly, got ${ERRORS} error(s)"
+            exit 1
+          fi
+          echo "discovery control: ${SCANNED} .deed file seen and validated"
+
+  # ---------------------------------------------------------------------------
+  # Shell lint on the validator itself.
+  # ---------------------------------------------------------------------------
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - name: Lint validator scripts
+        run: |
+          set -euo pipefail
+          bash -n validate-a2ml.sh
+          bash -n validate-manifest-dialect.sh
+          shellcheck -S warning validate-a2ml.sh validate-manifest-dialect.sh

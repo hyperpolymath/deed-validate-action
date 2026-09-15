@@ -1,0 +1,5 @@
+; SPDX-License-Identifier: MPL-2.0
+; Keyword identity + keyword version.
+(repo-deed
+  :canonical-name "keyword-identity"
+  :schema-version "1.0.0")

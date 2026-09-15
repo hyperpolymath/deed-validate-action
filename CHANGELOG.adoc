@@ -7,3 +7,59 @@ Changelog], and this project adheres to
 https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
+
+=== [1.0.0] -- 2026-09-15
+
+First tagged release, and the first release in which the action can actually
+see a `.deed` file.
+
+==== Added
+
+* `.deed` discovery. The file-discovery glob now matches `*.deed` alongside the
+  superseded `*.a2ml`. Before this release the glob named `*.a2ml` only, so a
+  repository containing nothing but `.deed` manifests was scanned, found zero
+  files, reported zero errors and exited `0` -- a silent total bypass rather
+  than a visible failure.
+* Recognition of the `:canonical-name`, `:estate-authority` and `:agent-id`
+  identity keys, and of `:schema-version` as a version key.
+* Recognition of identity by head form alone for the four ruled DEED heads
+  (`estate-deed`, `estate-atlas-deed`, `repo-deed`, `praxis-deed`), which is how
+  `ATLAS.deed` identifies itself -- it carries no `:canonical-name`.
+* A self-test workflow (`.github/workflows/self-test.yml`) and a fixture corpus
+  under `test/fixtures/`. The action now runs against its own tree, which it
+  never did before -- the repository contained not one `.deed` file, so nothing
+  the action did was ever exercised against the format it is named for. The
+  jobs assert on discovery *count* rather than exit code, because a validator
+  that finds nothing exits `0`; the `invalid/` corpus is a positive control
+  proving the run can still report failure; and two fixtures pin the token
+  boundary so that removing the `^` anchors cannot widen too far.
+
+==== Fixed
+
+* Nested `(metadata ...)` and `(version ...)` forms written *inline* were not
+  detected. Both checks were anchored with `^[[:space:]]*`, so a manifest
+  written as `(state (metadata (name "x") (version "1.0.0")))` reported
+  "No identity found" and "Missing version" -- and under `strict: true` that
+  rejected a valid manifest. The anchors are gone; the `(` prefix and the
+  trailing whitespace/EOL boundary are retained, so `(versioning` and
+  `:registry-version` still correctly fail the version check.
+* `README.adoc`, which is the GitHub Marketplace landing page, carried three
+  dead or wrong references: the DEED specification link pointed at
+  `standards/tree/main/a2ml` (a 404), the usage snippet told users to write
+  `uses: hyperpolymath/standards/a2ml/actions/validate@main` (a different
+  repository entirely), and the ecosystem section used a monorepo-relative
+  `link:../../README.adoc` that resolves nowhere from a standalone repo.
+
+==== Changed
+
+* Prose and examples throughout `README.adoc` and `action.yml` now speak of DEED
+  and `.deed`, with `.a2ml` referred to as superseded rather than as the primary
+  format. A2ML is expanded as "Attestation Markup Language".
+
+==== Known limitations
+
+* Roughly 120 stamped copies of this validator exist elsewhere on a separate
+  lineage. They still carry the old glob and are not reached by fixing this
+  repository.
+* The Check-3 attestation exemption still matches bare basenames rather than
+  canonical paths.
