@@ -1,0 +1,3 @@
+; SPDX-License-Identifier: MPL-2.0
+; The superseded .a2ml extension must still be discovered and validated.
+(repo-deed (metadata (name "legacy-superseded") (version "1.0.0")))

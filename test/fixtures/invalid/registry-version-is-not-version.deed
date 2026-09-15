@@ -1,0 +1,3 @@
+; SPDX-License-Identifier: MPL-2.0
+; TOKEN-BOUNDARY CONTROL: `:registry-version` must NOT satisfy the version check.
+(repo-deed (metadata (name "registry-version-is-not-version")) :registry-version "1.0.0")

@@ -1,0 +1,4 @@
+; SPDX-License-Identifier: MPL-2.0
+; The INLINED nested form. This is the shape that silently failed before v1.0.0:
+; both `(metadata` and `(version` sit mid-line, so a `^[[:space:]]*` anchor missed them.
+(repo-deed (metadata (name "inline-nested") (version "1.0.0")))

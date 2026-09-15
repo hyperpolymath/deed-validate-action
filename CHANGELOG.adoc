@@ -25,6 +25,14 @@ see a `.deed` file.
 * Recognition of identity by head form alone for the four ruled DEED heads
   (`estate-deed`, `estate-atlas-deed`, `repo-deed`, `praxis-deed`), which is how
   `ATLAS.deed` identifies itself -- it carries no `:canonical-name`.
+* A self-test workflow (`.github/workflows/self-test.yml`) and a fixture corpus
+  under `test/fixtures/`. The action now runs against its own tree, which it
+  never did before -- the repository contained not one `.deed` file, so nothing
+  the action did was ever exercised against the format it is named for. The
+  jobs assert on discovery *count* rather than exit code, because a validator
+  that finds nothing exits `0`; the `invalid/` corpus is a positive control
+  proving the run can still report failure; and two fixtures pin the token
+  boundary so that removing the `^` anchors cannot widen too far.
 
 ==== Fixed
 
@@ -50,5 +58,8 @@ see a `.deed` file.
 
 ==== Known limitations
 
-* The action has no self-test workflow of its own, so this fix is not yet
-  exercised by the repository's own CI. Tracked as a follow-up.
+* Roughly 120 stamped copies of this validator exist elsewhere on a separate
+  lineage. They still carry the old glob and are not reached by fixing this
+  repository.
+* The Check-3 attestation exemption still matches bare basenames rather than
+  canonical paths.

@@ -1,0 +1,4 @@
+; SPDX-License-Identifier: MPL-2.0
+; TOKEN-BOUNDARY CONTROL: `(versioning` must NOT satisfy the version check.
+; If this fixture ever passes, the anchors were loosened too far.
+(repo-deed (metadata (name "versioning-is-not-version")) (versioning "1.0.0"))

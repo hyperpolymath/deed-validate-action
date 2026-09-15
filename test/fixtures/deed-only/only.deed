@@ -1,0 +1,5 @@
+; SPDX-License-Identifier: MPL-2.0
+; DISCOVERY CONTROL: a directory containing NOT ONE .a2ml file.
+; Before v1.0.0 the glob named *.a2ml only, so this directory scanned
+; zero files, reported zero errors and exited 0 -- a silent total bypass.
+(repo-deed (metadata (name "only") (version "1.0.0")))
