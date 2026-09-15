@@ -6,11 +6,14 @@
 # structure, required fields, SPDX headers, and attestation blocks.
 
 name: 'Validate DEED Manifests'
+# NOTE: GitHub Marketplace rejects a description of 125 characters or more.
+# The previous text was 216 and blocked publication. Keep any edit under 125 —
+# `yaml.safe_load(...)['description']` is what GitHub measures, so a folded
+# block scalar does not help: folding joins the lines into ONE long string.
+# The fuller description lives in README.adoc, which has no length limit.
 description: >-
-  Scan and validate .deed manifest files against the DEED grammar.
-  Checks identity (:canonical-name), version (:schema-version),
-  SPDX headers, and attestation block structure. Also reads the
-  superseded .a2ml extension.
+  Validate .deed (and legacy .a2ml) manifests against the DEED grammar:
+  identity, version, SPDX and attestation.
 author: 'Jonathan D.A. Jewell'
 
 branding:
