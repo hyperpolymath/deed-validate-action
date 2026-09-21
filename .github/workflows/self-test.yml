@@ -1,3 +1,4 @@
+# This workflow is managed by gh actions-lock.
 # SPDX-License-Identifier: MPL-2.0
 # Self-test — this action run against its own fixture corpus.
 #
@@ -38,9 +39,9 @@ jobs:
     name: valid corpus (strict)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
       - id: validate
-        uses: ./
+        uses: $/
         with:
           path: test/fixtures/valid
           strict: 'true'
@@ -77,10 +78,10 @@ jobs:
     name: invalid corpus (positive control)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
       - id: validate
         continue-on-error: true   # the action is SUPPOSED to fail here
-        uses: ./
+        uses: $/
         with:
           path: test/fixtures/invalid
           strict: 'true'
@@ -114,9 +115,9 @@ jobs:
     name: .deed-only discovery (regression)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
       - id: validate
-        uses: ./
+        uses: $/
         with:
           path: test/fixtures/deed-only
           strict: 'true'
@@ -144,7 +145,7 @@ jobs:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/checkout@v7.0.1
       - name: Lint validator scripts
         run: |
           set -euo pipefail
